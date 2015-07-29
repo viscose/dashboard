@@ -7,9 +7,12 @@
     = stylesheet_link_tag 'application', media: 'all', 'data-turbolinks-track' => true
     = javascript_include_tag 'application', 'data-turbolinks-track' => true
     = csrf_meta_tags
+    = yield :head
   %body
     %header
       = render 'layouts/navigation'
-    %main{:role => "main"}
+    %main{:role => "main", :class => 'container-fluid'}
       = render 'layouts/messages'
-      = yield
+      = render 'layouts/main_menu'
+      #content.span11
+        = yield

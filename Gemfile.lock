@@ -1,3 +1,10 @@
+GIT
+  remote: https://github.com/jmaziarz/bootstrap-acme-rails.git
+  revision: 61a377c129ad583af2ab615b494d5f54a95a1a93
+  specs:
+    bootstrap-acme-rails (1.1.1.5)
+      railties (>= 3.1)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -171,6 +178,7 @@ PLATFORMS
 DEPENDENCIES
   better_errors
   binding_of_caller
+  bootstrap-acme-rails!
   bootstrap-sass
   byebug
   coffee-rails (~> 4.1.0)

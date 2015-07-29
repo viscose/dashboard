@@ -26,3 +26,5 @@ end
 group :production do
   gem 'puma'
 end
+
+gem 'bootstrap-acme-rails', git: 'https://github.com/jmaziarz/bootstrap-acme-rails.git'
