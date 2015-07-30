@@ -36,7 +36,7 @@
   </a>
   <a class="quick-button span3" data-toggle="deployment">
     <i class="fa-icon-tasks"></i>
-    <p>Application Deployment</p>
+    <p>Application Management</p>
   </a>
   <a class="quick-button span3" data-toggle="runtime">
     <i class="fa-icon-cog"></i>
@@ -48,27 +48,22 @@
   </a>
   
 <script type="text/javascript">
-$(function($) {
+$(function() {
   $('#tool-tabs a').each(function() {
     var toggleElement = $(this).attr("data-toggle");
     $(this).click(function() {
-      $('#tool-boxes .box').each(function() {
-        // console.log($(this));
+      $('.tool-box .box').each(function() {
         $(this).hide();
       });
       $("#" + toggleElement).show();
-      // console.log(toggleElement);
     });
   });
-  $('#tool-boxes .box').each(function() {
-    $(this).hide();
-  });
-})();
+});
 </script>
 </div>
 
-<div class="row-fluid" id="tool-boxes">
-  <div class="box span12" id="provisioning">
+<div class="row-fluid tool-box">
+  <div class="box span12" id="provisioning" style="display:none;">
     <div class="box-header">
       <h2>
         <i class="fa-icon-hdd"></i>
@@ -88,7 +83,7 @@ $(function($) {
             <span class="input-group-addon">devices</span>
           </div>
         </div>
-        <%= button_tag 'Deploy', class: 'btn btn-large btn-success span2' %>
+        <%= button_tag 'Provision', class: 'btn btn-large btn-success span2' %>
       <% end %>
       <script type="text/javascript">
       $(function() {
@@ -108,26 +103,91 @@ $(function($) {
     </div>
   </div>
 </div>
-
-<div class="row-fluid" id="tool-boxes">
-  <div class="box span12" id="deployment">
+<div class="row-fluid tool-box">
+  <div class="box span12" id="deployment" style="display:none;">
     <div class="box-header">
       <h2>
         <i class="fa-icon-tasks"></i>
         <span class="break"></span>
-        Application Deployment
+        Application Management
       </h2>
     </div>
     <div class="box-content">
       <div class="row-fluid">
-        <p>Content here.</p>
+        <ul class="dashboard-list span6">
+          <li>
+            <a href="#" data-app-name="bms_traditional">
+              <i class="fa-icon-building"></i>
+              Traditional BMS (Application Logic in the Cloud)
+            </a>
+            <div class="row-fluid" style="display:none;">
+              <div class="span8">
+                <%= image_tag 'bms_application_single.svg' %>
+              </div>
+            </div>
+          </li>
+          <li>
+            <a href="#" data-app-name="bms_evolved">
+              <i class="fa-icon-building"></i>
+              Evolved BMS (Application Logic on Devices)
+            </a>
+            <div class="row-fluid" style="display:none;">
+              <div class="span8">
+                <%= image_tag 'bms_application_multi.svg' %>
+              </div>
+            </div>
+          </li>
+        </ul>
+        <script type="text/javascript">
+          $(function() {
+            $("#deployment li a").each(function() {
+              $(this).click(function() {
+                $("#deployment ul .row-fluid").each(function() {
+                  $(this).hide();
+                });
+                $(this).next().show();
+                $("#app_name").val($(this).attr("data-app-name"));
+              });
+            });
+          });
+        </script>
+        <div class="span6">
+          <div class="row-fluid">
+          <%= form_tag deploy_app_path do %>
+            <div class="sliderOverlay span7">
+              <div id="app_deployment_size" class="slider sliderMin sliderGreen"></div>
+            </div>
+            <div class="span2">
+              <div class="input-group">  
+                <%= text_field_tag 'app_num_devices', '', readonly: true, size: 3, class: 'form-control', style: 'width: 2em;' %>
+                <span class="input-group-addon">devices</span>
+              </div>
+            </div>
+            <%= hidden_field_tag 'app_name' %>
+            <%= button_tag 'Deploy Application', class: 'btn btn-large btn-success span6' %>
+          <% end %>
+          <script type="text/javascript">
+          $(function() {
+            $("#app_deployment_size").slider({
+              range: "min",
+              value: <%= session[:deployment]['app_num_devices'].to_i rescue 0 %>,
+              min: 0,
+              max: $("#num_devices").val(),
+              slide: function(event, ui) {
+                $("#app_num_devices").val(ui.value);
+              }
+            });
+            $("#app_num_devices").val(<%= session[:deployment]['app_num_devices'] rescue 0 %>);
+          });
+          </script>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
-
-<div class="row-fluid" id="tool-boxes">
-  <div class="box span12" id="runtime">
+<div class="row-fluid tool-box">
+  <div class="box span12" id="runtime" style="display:none;">
     <div class="box-header">
       <h2>
         <i class="fa-icon-cog"></i>
@@ -137,14 +197,13 @@ $(function($) {
     </div>
     <div class="box-content">
       <div class="row-fluid">
-        <p>Content here.</p>
+        <p>Coming soon.</p>
       </div>
     </div>
   </div>
 </div>
-
-<div class="row-fluid" id="tool-boxes">
-  <div class="box span12" id="status">
+<div class="row-fluid tool-box">
+  <div class="box span12" id="status" style="display:none;">
     <div class="box-header">
       <h2>
         <i class="fa-icon-dashboard"></i>
@@ -154,8 +213,58 @@ $(function($) {
     </div>
     <div class="box-content">
       <div class="row-fluid">
-        <p>Content here.</p>
+        <div class="circleStats">
+          <div class="span2">
+            <div class="circleStatsItemBox">
+              <div class="header">CPU Load</div>
+              <span class="percent">percent</span>
+              <div class="circleStat">
+                <input type="text" value="54" class="whiteCircle">
+              </div>
+              <div class="footer">
+                
+              </div>
+            </div>
+          </div>          
+          <div class="span2">
+            <div class="circleStatsItemBox">
+              <div class="header">Network Load</div>
+              <span class="percent">percent</span>
+              <div class="circleStat">
+                <input type="text" value="31" class="whiteCircle">
+              </div>
+              <div class="footer">
+                
+              </div>
+            </div>
+          </div>          
+          <div class="span2">
+            <div class="circleStatsItemBox">
+              <div class="header">Memory Pressure</div>
+              <span class="percent">percent</span>
+              <div class="circleStat">
+                <input type="text" value="79" class="whiteCircle">
+              </div>
+              <div class="footer">
+                
+              </div>
+            </div>
+          </div>          
+          <div class="span2">
+            <div class="circleStatsItemBox">
+              <div class="header">Active Devices</div>
+              <span class="percent">gateways</span>
+              <div class="circleStat">
+                <input type="text" value="53" class="whiteCircle">
+              </div>
+              <div class="footer">
+                
+              </div>
+            </div>
+          </div>          
+        </div>
       </div>
+      <p>Coming soon.</p>
     </div>
   </div>
 </div>
