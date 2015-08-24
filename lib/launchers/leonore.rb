@@ -19,7 +19,7 @@ balancer = Server.find_by_role(:leonore_master).try(:first).try(:fog_server) || 
 nodes = Server.find_by_role(:leonore_node).map(&:fog_server) || []
 (NUM_NODES - nodes.length).times do |i|
   nodes << compute_client.servers.create(
-  name: "provisioning-node-#{nodes.length + i + 1}", 
+  name: "provisioning-node-#{nodes.length + 1}",
   image_ref: LEONORE_BASE_IMAGE_ID, 
   flavor_ref: '000000512',
   user_data: user_data
@@ -40,32 +40,35 @@ end
 
 balancer.username = 'ubuntu'
 begin
-  tries ||= 5
+  tries ||= 10
   balancer.ssh ['uptime']
 rescue
   sleep 5
+  balancer.reload
   retry unless (tries -= 1).zero?
 end
 
+nodes.map(&:reload)
 balancer.ssh [
-  'sudo -u tomcat7 wget --output-document=/var/lib/tomcat7/webapps/SDGBalancer.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBalancer.war',
-  "sleep 5 && curl -i 'http://admin:admin@localhost:8080/manager/text/start?path=/SDGBalancer'",
+  'sudo -u tomcat7 wget --output-document=/tmp/SDGBalancer.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBalancer.war && sudo -u tomcat7 mv /tmp/SDGBalancer.war /var/lib/tomcat7/webapps',
+  "while ! curl -i 'http://admin:admin@localhost:8080/manager/text/list'|grep 'SDGBalancer:running'; do sleep 1; echo waiting; done",
   # register LEONORE nodes at balancer
-  %Q{curl -H "Content-Type: application/json" -X POST -d '{"nodes":["'#{nodes.map { |n| n.private_ip_addresses.first }.join('\'","\'')}'"],"loadThreshold":"'$THRESHOLD'"}' http://localhost:8080/SDGBalancer/balancer/configure}
+  %Q{curl -H "Content-Type: application/json" -X POST -d '{"nodes":["'#{nodes.map(&:private_ip_address).join('\'","\'')}'"],"loadThreshold":"25"}' http://localhost:8080/SDGBalancer/balancer/configure}
 ]
 
 nodes.each do |node|
+  node.wait_for { ready? }
+  node.reload
   cmd = [
     'mkdir -p /tmp/leonore',
     'wget --output-document=/tmp/leonore/component-repository.zip http://www.infosys.tuwien.ac.at/staff/mvoegler/viscose/leonore/component-repository.zip',
     'cd /tmp/leonore && unzip component-repository.zip',
     'sudo chown -R tomcat7:tomcat7 /tmp/leonore',
-    'sudo -u tomcat7 wget --output-document=/var/lib/tomcat7/webapps/SDGBuilder.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBuilder.war',
-    'sudo -u tomcat7 wget --output-document=/var/lib/tomcat7/webapps/SDGManager.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGManager.war',
-    "sleep 5 && curl -i 'http://admin:admin@localhost:8080/manager/text/start?path=/SDGBuilder'",
-    "curl -i 'http://admin:admin@localhost:8080/manager/text/start?path=/SDGManager'"
+    'sudo -u tomcat7 wget --output-document=/tmp/SDGBuilder.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBuilder.war',
+    'sudo -u tomcat7 wget --output-document=/tmp/SDGManager.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGManager.war',
+    'sudo -u tomcat7 mv /tmp/*.war /var/lib/tomcat7/webapps'
   ]
-  `ssh-via #{balancer.public_ip_addresses.first} #{node.private_ip_address.first} "#{cmd.join(';')}"`
+  `ssh-via #{balancer.public_ip_address} #{node.private_ip_address} "#{cmd.join(';')}"`
 end
 
 raise 'done?'
