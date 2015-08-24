@@ -26,13 +26,13 @@
 </style>
 <% end %>
 
-<h1>Infrastructure</h1>
+<h1>Dashboard</h1>
   
 <div class="row-fluid" id="tool-tabs">
   
   <a class="quick-button span3" data-toggle="provisioning">
     <i class="fa-icon-hdd"></i>
-    <p>Provisioning</p>
+    <p>Device Provisioning</p>
   </a>
   <a class="quick-button span3" data-toggle="deployment">
     <i class="fa-icon-tasks"></i>
@@ -68,7 +68,7 @@ $(function() {
       <h2>
         <i class="fa-icon-hdd"></i>
         <span class="break"></span>
-        Provisioning
+        Device Provisioning
       </h2>
     </div>
     <div class="box-content">
@@ -197,7 +197,13 @@ $(function() {
     </div>
     <div class="box-content">
       <div class="row-fluid">
-        <p>Coming soon.</p>
+        <% if session.fetch(:deployment, {}).fetch('apps', []).empty? then%>
+          <p>Deploy an application to see runtime stats.</p>
+        <% else %>
+          <% session[:deployment]['apps'].each do |app_name| %>
+            <p>Get runtime stats for <%= app_name %> at <%= link_to "#{app_name} stats" %>.</p>
+          <% end %>
+        <% end %>
       </div>
     </div>
   </div>
