@@ -3,6 +3,9 @@
   Active Servers: 
   = @servers.length
 
+%p
+  = link_to 'Launch LEONORE', launch_servers_path(app: :leonore), method: :post
+
 .row-fluid
   .box.span12
     .box-header
