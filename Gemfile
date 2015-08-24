@@ -27,3 +27,5 @@ group :production do
 end
 
 gem 'bootstrap-acme-rails', git: 'https://github.com/jmaziarz/bootstrap-acme-rails.git'
+
+gem 'fog'
