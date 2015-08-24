@@ -1,7 +1,11 @@
 #sidebar-left.span1
   %nav.nav-collapse.sidebar-nav
     %ul.nav.nav-tabs.nav-stacked.main-menu
-      %li
+      %li{:class => "#{active_if_current(root_path)}"}
         %a{:href => "#{root_path}"}
           %i.fa-icon-bar-chart
           %span.hidden-tablet Dashboard
+      %li{:class => "#{active_if_current(servers_path)}"}
+        %a{:href => "#{servers_path}"}
+          %i.fa-icon-hdd
+          %span.hidden-tablet Infrastructure

@@ -1,0 +1,31 @@
+%h1 Infrastructure
+%h2
+  Active Servers: 
+  = @servers.length
+
+.row-fluid
+  .box.span12
+    .box-header
+      %h2
+        %i.fa-icon-hdd
+        %span.break
+        Instances
+    .box-content
+      %table.table.table-striped
+        %thead
+          %tr
+            %th Name
+            %th ID
+            %th Role
+            %th Status
+            %th Action
+        %tbody
+          - @servers.each do |server|
+            %tr{ :class => cycle('odd', 'even') }
+              %td= server.name
+              %td= server.id
+              %td= server.role
+              %td= server.status
+              %td
+                = link_to content_tag(:i, '', class: 'halflings-icon remove'), server_path(server), method: :delete#, data: { confirm: 'Are you sure?' }
+    
