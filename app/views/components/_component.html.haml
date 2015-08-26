@@ -1,0 +1,12 @@
+.span4
+  %h2= component.name
+  %p
+    = component.description
+    = link_to component.url, component.url
+  %p
+    - component.deployment_status.each do |step_name, status|
+      %span{ class: "label label-#{status ? 'success' : 'warning' }" }
+        = link_to step_name, component_execute_steps_path(component, steps: component.deployment_steps_upto(step_name)), method: :post
+  %p.actions
+    = link_to 'Deploy', component_deploy_path(component), class: 'btn', method: :post
+    = link_to 'Undeploy', component_undeploy_path(component), class: 'btn', method: :post

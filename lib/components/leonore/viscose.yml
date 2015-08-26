@@ -1,0 +1,94 @@
+name: LEONORE
+description: The LEONORE Provisioning Framework
+url: http://github.com/nbd/leonore
+deploy: [ start_balancer, start_nodes, configure_leonore ]
+undeploy: [ teardown ]
+params:
+  base_image_id: '03f4725b-118e-456c-886c-b3a62bac7fc5'
+  num_nodes: 2
+  user_data: |
+    #cloud-config
+    ssh_import_id: [inzinger]
+    apt_proxy: http://robot-devil.infosys.tuwien.ac.at:8000/
+    packages:
+     - htop
+steps:
+  - name: start_balancer
+    script: |
+      balancer = compute_client.servers.create(
+        name: 'provisioning-balancer', 
+        image_ref: params['base_image_id'], 
+        flavor_ref: '000000512',
+        user_data: params['user_data']
+      )
+      balancer.wait_for { ready? }
+      balancer.metadata.set(role: :leonore_master)
+      # Add public IP to balancer
+      balancer.associate_address compute_client.addresses.select { |a| a.instance_id == nil }.first.ip
+    verify: |
+      !Server.find_by_role(:leonore_master).try(:first).nil?
+  - name: start_nodes
+    script: |
+      nodes = Server.find_by_role(:leonore_node).map(&:fog_server)
+      (component.params['num_nodes'] - nodes.length).times do |i|
+        nodes << compute_client.servers.create(
+        name: "provisioning-node-#{nodes.length + 1}",
+        image_ref: component.params['base_image_id'], 
+        flavor_ref: '000000512',
+        user_data: component.params['user_data']
+      )
+      end
+      nodes.each { |n| n.wait_for { ready? } }
+      nodes.each { |n| n.metadata.set(role: :leonore_node) }
+    verify: |
+      Server.find_by_role(:leonore_node).count == params['num_nodes']
+  - name: configure_leonore
+    script: |
+      balancer = Server.find_by_role(:leonore_master).try(:first).try(:fog_server)
+      nodes = Server.find_by_role(:leonore_node).map(&:fog_server)
+      
+      return if balancer.nil?
+      
+      balancer.username = 'ubuntu'
+      begin
+        tries ||= 10
+        balancer.ssh ['uptime']
+      rescue
+        sleep 5
+        balancer.reload
+        retry unless (tries -= 1).zero?
+      end
+      
+      balancer.ssh [
+        'sudo -u tomcat7 wget --output-document=/tmp/SDGBalancer.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBalancer.war && sudo -u tomcat7 mv /tmp/SDGBalancer.war /var/lib/tomcat7/webapps',
+        "while ! curl -i 'http://admin:admin@localhost:8080/manager/text/list'|grep 'SDGBalancer:running'; do sleep 1; echo waiting; done",
+        # register LEONORE nodes at balancer
+        %Q{curl -H "Content-Type: application/json" -X POST -d '{"nodes":["'#{nodes.map(&:private_ip_address).join('\'","\'')}'"],"loadThreshold":"25"}' http://localhost:8080/SDGBalancer/balancer/configure}
+      ]
+      
+      nodes.each do |node|
+        node.wait_for { ready? }
+        node.reload
+        cmd = [
+          'mkdir -p /tmp/leonore',
+          'wget --output-document=/tmp/leonore/component-repository.zip http://www.infosys.tuwien.ac.at/staff/mvoegler/viscose/leonore/component-repository.zip',
+          'cd /tmp/leonore && unzip component-repository.zip',
+          'sudo chown -R tomcat7:tomcat7 /tmp/leonore',
+          'sudo -u tomcat7 wget --output-document=/tmp/SDGBuilder.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGBuilder.war',
+          'sudo -u tomcat7 wget --output-document=/tmp/SDGManager.war http://dsg.tuwien.ac.at/staff/mvoegler/viscose/leonore/SDGManager.war',
+          'sudo -u tomcat7 mv /tmp/*.war /var/lib/tomcat7/webapps'
+        ]
+        `ssh-via #{balancer.public_ip_address} #{node.private_ip_address} "#{cmd.join(';')}"`
+      end
+      
+    verify: |
+      balancer = Server.find_by_role(:leonore_master).first
+      system "curl -i http://#{balancer.public_address}:8080/SDGBalancer/balancer/status|grep 'HTTP/1.1 200'"
+  # - name: configure
+  # - name: start
+  # - name: stop
+  - name: teardown
+    script: |
+      Server.all.each do |server|
+        server.destroy! if [ 'leonore_node', 'leonore_master' ].include? server.role
+      end

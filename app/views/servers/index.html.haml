@@ -3,8 +3,9 @@
   Active Servers: 
   = @servers.length
 
-%p
-  = link_to 'Launch LEONORE', launch_servers_path(app: :leonore), method: :post
+
+.row-fluid
+  = render @components
 
 .row-fluid
   .box.span12
@@ -31,4 +32,7 @@
               %td= server.status
               %td
                 = link_to content_tag(:i, '', class: 'halflings-icon remove'), server_path(server), method: :delete#, data: { confirm: 'Are you sure?' }
-    
+
+%p= link_to 'Shutdown all instances', launch_servers_path(app: :shutdown), method: :post
+%p= link_to 'Launch LEONORE', launch_servers_path(app: :leonore), method: :post
+

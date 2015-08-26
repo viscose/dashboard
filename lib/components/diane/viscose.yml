@@ -1,0 +1,20 @@
+name: DIANE
+description: The DIANE Application Management Framework
+url: http://github.com/nbd/diane
+deploy: [ preflight, deploy, configure, start ]
+undeploy: [ teardown ]
+steps:
+  - name: preflight
+    script: |
+      puts 'someone should probably start some instances'
+  - name: deploy
+    script: |
+      puts 'you might want to actually deploy something'
+  # - name: configure
+  # - name: start
+  # - name: stop
+  - name: teardown
+    script: |
+      Server.all.each do |server|
+        server.destroy! if [ 'leonore_node', 'leonore_master' ].include? server.role
+      end

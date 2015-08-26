@@ -4,13 +4,8 @@ require 'ipaddr'
 class Server
   include ActiveModel::Model
   
-  attr_reader :id
-  attr_reader :name
-  attr_reader :role
-  attr_reader :status
-  attr_reader :private_address
-  attr_reader :public_address
-  attr_reader :fog_server
+  attr_reader :id, :name, :role, :status
+  attr_reader :private_address, :public_address, :fog_server
   
   def self.compute_client
     @compute_client ||= Fog::Compute.new(
@@ -49,7 +44,7 @@ class Server
   end
   
   def destroy!
-    compute_client.servers.get(id).destroy
+    compute_client.delete_server(id)
   end
   
   def to_param
