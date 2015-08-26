@@ -21,6 +21,11 @@ group :development do
   gem 'html2haml'
   gem 'quiet_assets'
   gem 'rails_layout'
+  # gem 'rb-fsevent', :require => false if RUBY_PLATFORM =~ /darwin/i
+  gem 'guard'
+  gem 'guard-minitest'
+  gem 'guard-bundler'
+  gem 'terminal-notifier-guard'
 end
 group :production do
   gem 'puma'
