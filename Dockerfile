@@ -1,33 +1,43 @@
-FROM ruby:2.2.0
-
+FROM ubuntu:14.04
 MAINTAINER Johannes M. Schleicher <schleicher@dsg.tuwien.ac.at>
 
-# Install packages for building ruby / pythong
-RUN apt-get update -qq && apt-get install -y build-essential libpq-dev
+# Install packages for building ruby
+RUN apt-get update
+RUN apt-get install -y --force-yes build-essential wget git
+RUN apt-get install -y --force-yes zlib1g-dev libssl-dev libreadline-dev libyaml-dev libxml2-dev libxslt-dev
+RUN apt-get clean
+
+RUN wget -P /root/src http://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.2.tar.gz
+RUN cd /root/src; tar xvf ruby-2.2.2.tar.gz
+RUN cd /root/src/ruby-2.2.2; ./configure; make install
+
+RUN gem update --system
+RUN gem install bundler
 
 # SqLite
 RUN apt-get -y install sqlite3 libsqlite3-dev
+
+# # Add Openstack nova client support
+
+RUN apt-get -y install python python-dev software-properties-common python-pip
+RUN pip install python-novaclient
 
 # for a JS runtime
 RUN apt-get install -y nodejs
 
 
-# # Add Openstack nova client support
-#
-#
-RUN apt-get -y install python python-dev software-properties-common python-pip
-# RUN curl https://pypi.python.org/packages/source/s/setuptools/setuptools-1.1.6.tar.gz | (cd /root;tar xvzf -;cd setuptools-1.1.6;python setup.py install)
-# RUN easy_install pip
-RUN pip install python-novaclient
-
 # Add assets
 RUN mkdir /dashboard
 ADD ./ /dashboard
+
+# Copy the Gemfile and Gemfile.lock into the image.
+ADD Gemfile /dashboard/Gemfile
+ADD Gemfile.lock /dashboard/Gemfile.lock
 WORKDIR /dashboard
 
 # RUN git clone https://github.com/tcnksm/docker-sinatra /root/sinatra
-RUN bundle install
+RUN bundle install --jobs 5
 
 EXPOSE 3000
-CMD ["rails", "server", "-b", "0.0.0.0"]
-# CMD ["/usr/local/bin/foreman","start","-d","/root/sinatra"]
+
+CMD ["bash", "-c", "rails server -b 0.0.0.0"]
