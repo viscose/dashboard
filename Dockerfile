@@ -25,18 +25,19 @@ RUN pip install python-novaclient
 # for a JS runtime
 RUN apt-get install -y nodejs
 
+COPY Gemfile* /tmp/
+WORKDIR /tmp
+RUN bundle install
 
 # Add assets
 RUN mkdir /dashboard
 ADD ./ /dashboard
 
-# Copy the Gemfile and Gemfile.lock into the image.
-ADD Gemfile /dashboard/Gemfile
-ADD Gemfile.lock /dashboard/Gemfile.lock
+
 WORKDIR /dashboard
 
 # RUN git clone https://github.com/tcnksm/docker-sinatra /root/sinatra
-RUN bundle install --jobs 5
+#RUN bundle install --jobs 5
 
 EXPOSE 3000
 
